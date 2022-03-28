@@ -1,9 +1,6 @@
 package complete;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import java.io.*;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.StringTokenizer;
@@ -12,134 +9,71 @@ import java.util.StringTokenizer;
 // 벽 부수고 이동하기
 public class Problem2206 {
 
-    // 몇번째인지, 벽을 부순적이 있는지 확인하는 변수 사용
-    static class WallAttacker {
-        int x, y;
-        boolean wallAttack;
+    public static void main(String[] args) throws IOException {
+        class PointXY {
+            int x;
+            int y;
+            int distance;
+            int bomb;
 
-        WallAttacker(int x, int y, boolean wallAttacker) {
-            this.x = x;
-            this.y = y;
-            this.wallAttack = wallAttacker;
-        }
-    }
-
-    static Queue<WallAttacker> queue;
-    static boolean[][] wall;
-    static boolean[][] visit;
-    static boolean[][] wallAttackerVisit;
-    static int N;
-    static int M;
-    static BufferedReader br;
-    static BufferedWriter bw;
-    static StringTokenizer st;
-    static int count;
-
-    public static void main(String[] args) throws Exception {
-
-        br = new BufferedReader(new InputStreamReader(System.in));
-        bw = new BufferedWriter(new OutputStreamWriter(System.out));
-
-
-        st = new StringTokenizer(br.readLine(), " ");
-        N = Integer.parseInt(st.nextToken());
-        M = Integer.parseInt(st.nextToken());
-
-        wall = new boolean[N][M];
-        for (int i = 0; i < N; i++) {
-            String[] wallCheckStrings = br.readLine().split("");
-            for (int j = 0; j < M; j++) {
-                if (Integer.parseInt(wallCheckStrings[j]) == 1) {
-                    wall[i][j] = true;
-                }
+            PointXY(int x, int y, int distance, int bomb) {
+                this.x = x;
+                this.y = y;
+                this.distance = distance;
+                this.bomb = bomb;
             }
-        }
+        } // 좌표, 거리, 방문 여부
+        int[] dx = {0, 1, 0, -1};
+        int[] dy = {1, 0, -1, 0};
 
-        visit = new boolean[N][M];
-        wallAttackerVisit = new boolean[N][M];
+        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+        StringTokenizer st = new StringTokenizer(br.readLine());
+        Queue<PointXY> queue = new LinkedList<>();
 
-        queue = new LinkedList<>();
-        count = 1;
-        queue.add(new WallAttacker(0, 0, false));
-        visit[0][0] = true;
+        int height = Integer.parseInt(st.nextToken());
+        int width = Integer.parseInt(st.nextToken());
 
-        bfs();
+        int[][] area = new int[width][height];
+        boolean[][][] visit = new boolean[width][height][2]; // 위치의 방문 여부들과 벽 부숨 여부
 
-        System.out.println(count);
+        for (int i = 0; i < height; i++) {
+            String input = br.readLine();
+            for (int j = 0; j < width; j++) {
+                area[j][i] = input.charAt(j) - '0';
+            }
+        } // 경로 정보 입력받기!
 
-        bw.flush();
-        bw.close();
-    }
+        queue.add(new PointXY(0, 0, 1, 0));
+        visit[0][0][0] = true; // -> 시작 점 방문
+        int ans = -1;
 
-    static void bfs() {
-
-        if (queue.isEmpty()) {
-            count = -1;
-            return;
-        }
-
-        // 벽과 visi t을 고려해서 갈 수 있는 경우에만 추가
-        int size = queue.size();
-        for (int i = 0; i < size; i++) {
-            WallAttacker wallAttacker = queue.poll();
-
-
-            // 혹시 내가 원하는 값이 나왔다면?
-            if (wallAttacker.x == M - 1 && wallAttacker.y == N - 1) {
-                return;
+        while (!queue.isEmpty()) {
+            PointXY check = queue.poll();
+            if (check.x == width - 1 && check.y == height - 1) {
+                ans = check.distance;
+                break;
             }
 
-            WallAttacker[] cases = new WallAttacker[4];
-            cases[0] = new WallAttacker(wallAttacker.x - 1, wallAttacker.y, wallAttacker.wallAttack);
-            cases[1] = new WallAttacker(wallAttacker.x + 1, wallAttacker.y, wallAttacker.wallAttack);
-            cases[2] = new WallAttacker(wallAttacker.x, wallAttacker.y - 1, wallAttacker.wallAttack);
-            cases[3] = new WallAttacker(wallAttacker.x, wallAttacker.y + 1, wallAttacker.wallAttack);
+            for (int force = 0; force < 4; force++) {
+                int nx = check.x + dx[force];
+                int ny = check.y + dy[force];
+                if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue; // 범위 초과시 스킵
 
-
-            for (WallAttacker inCase : cases) {
-                // 값을 초과하는 범위를 만났을 때
-                if (inCase.x < 0 || inCase.x >= M || inCase.y < 0 || inCase.y >= N) {
-                    continue;
-                }
-
-                // 방문한 경우일 때
-                else if (visit[inCase.y][inCase.x]) {
-                    continue;
-                }
-
-                // 벽을 뚫고 방문한 경우가 있고, 현재 벽을 뚫은 적이 있을 때,
-                else if (wallAttackerVisit[inCase.y][inCase.x] && inCase.wallAttack) {
-                    continue;
-                }
-
-
-                // 벽을 만났을 때
-                else if (wall[inCase.y][inCase.x]) {
-                    // 벽 때려봤으면
-                    if (inCase.wallAttack) {
-                        continue;
-                    }
-                    // 안 때려 봤으면
-                    else {
-                        inCase.wallAttack = true;
+                if (!visit[nx][ny][check.bomb]) { // 방문하지 않았으면
+                    if (area[nx][ny] == 0) { // 갈 수 있으면
+                        visit[nx][ny][check.bomb] = true;
+                        queue.add(new PointXY(nx, ny, check.distance + 1, check.bomb));
+                    } else if (area[nx][ny] == 1) { // 벽이 있으면
+                        if (check.bomb != 1) { //
+                            visit[nx][ny][1] = true;
+                            queue.add(new PointXY(nx, ny, check.distance + 1, 1));
+                        }
                     }
                 }
-
-                if (!inCase.wallAttack) {
-                    visit[inCase.y][inCase.x] = true;
-                } else {
-                    wallAttackerVisit[inCase.y][inCase.x] = true;
-                }
-                queue.add(inCase);
-
-
             }
+        } // bfs
 
-        }
-        count++;
-
-        bfs();
-
+        System.out.println(ans);
+        br.close();
     }
-
 }
