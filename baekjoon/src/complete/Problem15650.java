@@ -1,4 +1,4 @@
-package progress;
+package complete;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -25,10 +25,10 @@ public class Problem15650 {
         visit = new boolean[N+1];
         visitList = new int[M];
 
-        bfs(N, 0);
+        dfs(N, 0);
     }
 
-    public static void bfs(int N, int depth) {
+    public static void dfs(int N, int depth) {
         if (depth == M) {
             for (int var : visitList) {
                 System.out.print(var + " ");
@@ -38,16 +38,18 @@ public class Problem15650 {
         }
 
         for (int i = 1; i <= N; i++) {
+            // 첫번째 깊이가 아닌 경우 중에서 만약에 이전에 입력했던 배열의 값보다 작은 경우에는 제외
             if (depth != 0) {
                 if (i < visitList[depth-1]) {
                     continue;
                 }
             }
 
+            // 방문하지 않은 경우 절차 실행
             if (!visit[i]) {
                 visitList[depth] = i;
                 visit[i] = true;
-                bfs(N, depth+1);
+                dfs(N, depth+1);
                 visit[i] = false;
                 visitList[depth] = 0;
             }
